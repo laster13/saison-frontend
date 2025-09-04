@@ -20,7 +20,16 @@
   let expandedSeasons: Set<number> = new Set();
   let instanceId: number | null = null;
   let searchModalOpen = false;
+  let loadingSeason: number | null = null;
+  let loadingSearch: number | null = null;
   let searchModalSeason: number | null = null;
+  let loadingSeasonIt = false;
+
+  async function handleClick() {
+    loadingSeasonIt = true;
+    await handleSeasonIt(null); // ta fonction existante
+    loadingSeasonIt = false;
+  }
 
   onMount(async () => {
     showIdParam = (get(page).params as { id?: string }).id ?? '';
@@ -245,10 +254,24 @@
 
           {#if show.missing_episode_count > 0 && show.seasons && show.seasons.some(season => season.missing_episode_count > 0 && season.monitored && !season.has_future_episodes)}
             <button
-              class="mt-3 w-full rounded-lg bg-gradient-to-r from-red-500 to-emerald-500 py-2 text-sm font-medium sm:mt-4"
-              on:click={() => handleSeasonIt(null)}
+              on:click={handleClick}
+              disabled={loadingSeasonIt}
+              class="group relative mt-3 w-full cursor-pointer rounded-lg bg-gradient-to-r from-red-500 to-emerald-500 
+                     py-2 text-sm font-medium text-white shadow-md 
+                     transition-all duration-300 hover:scale-[1.03] 
+                     hover:shadow-[0_0_20px_rgba(34,197,94,0.6)] 
+                     focus:outline-none focus:ring-4 focus:ring-emerald-400/50 
+                     sm:mt-4 disabled:opacity-80 disabled:cursor-not-allowed"
             >
-              🧂 Season It pour toute la Série !
+              <div class="flex items-center justify-center space-x-2">
+                {#if loadingSeasonIt}
+                  <!-- Spinner -->
+                  <span class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  <span>Recherche en cours...</span>
+                {:else}
+                  <span>🧂 Season It pour toute la Série !</span>
+                {/if}
+              </div>
             </button>
           {/if}
         </div>
@@ -286,18 +309,61 @@
 
               {#if season.missing_episode_count > 0 && season.monitored && !season.has_future_episodes}
                 <div class="flex w-full gap-2 sm:w-auto">
-                  <button
-                    class="flex-1 rounded bg-gradient-to-r from-red-500 to-emerald-500 px-2 py-1 text-xs sm:flex-none sm:text-sm"
-                    on:click|stopPropagation={() => handleSeasonIt(season.seasonNumber)}
-                  >
-                    🧂 Season It !
-                  </button>
-                  <button
-                    class="flex-1 rounded bg-gray-700 px-2 py-1 text-xs sm:flex-none sm:text-sm"
-                    on:click|stopPropagation={() => handleInteractiveSearch(season.seasonNumber)}
-                  >
-                    🔍 Rechercher
-                  </button>
+                  <!-- Bouton Season It -->
+                  {#if loadingSeason === season.seasonNumber}
+                                  <button
+                                    disabled
+                                    class="flex-1 cursor-pointer rounded bg-gradient-to-r from-red-500 to-emerald-500 px-2 py-1 text-xs text-white shadow-md
+                                           transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(34,197,94,0.6)]
+                                           focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:flex-none sm:text-sm disabled:opacity-80"
+                                  >
+                                    <div class="flex items-center justify-center space-x-2">
+                                      <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                                      <span>Recherche...</span>
+                                    </div>
+                                  </button>
+                  {:else}
+                                  <button
+                                    class="flex-1 cursor-pointer rounded bg-gradient-to-r from-red-500 to-emerald-500 px-2 py-1 text-xs text-white shadow-md
+                                           transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(34,197,94,0.6)]
+                                           focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:flex-none sm:text-sm"
+                                    on:click|stopPropagation={async () => {
+                                      loadingSeason = season.seasonNumber;
+                                      await handleSeasonIt(season.seasonNumber);
+                                      loadingSeason = null;
+                                    }}
+                                  >
+                                    🧂 Season It !
+                                  </button>
+                  {/if}
+
+                  <!-- Bouton Rechercher -->
+                  {#if loadingSearch === season.seasonNumber}
+                                  <button
+                                    disabled
+                                    class="flex-1 cursor-pointer rounded bg-gray-700 px-2 py-1 text-xs text-white shadow-md
+                                           transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(156,163,175,0.6)]
+                                           focus:outline-none focus:ring-2 focus:ring-gray-400/50 sm:flex-none sm:text-sm disabled:opacity-80"
+                                  >
+                                    <div class="flex items-center justify-center space-x-2">
+                                      <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                                      <span>Recherche...</span>
+                                    </div>
+                                  </button>
+                  {:else}
+                                  <button
+                                    class="flex-1 cursor-pointer rounded bg-gray-700 px-2 py-1 text-xs text-white shadow-md
+                                           transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(156,163,175,0.6)]
+                                           focus:outline-none focus:ring-2 focus:ring-gray-400/50 sm:flex-none sm:text-sm"
+                                    on:click|stopPropagation={async () => {
+                                      loadingSearch = season.seasonNumber;
+                                      await handleInteractiveSearch(season.seasonNumber);
+                                      loadingSearch = null;
+                                    }}
+                                  >
+                                    🔍 Rechercher
+                                  </button>
+                  {/if}
                 </div>
               {/if}
 
