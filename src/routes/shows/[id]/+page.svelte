@@ -25,6 +25,8 @@
   let searchModalSeason: number | null = null;
   let loadingSeasonIt = false;
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   async function handleClick() {
     loadingSeasonIt = true;
     await handleSeasonIt(null); // ta fonction existante
@@ -70,12 +72,50 @@
     try {
       loading = true;
       error = null;
+
+      // 1. Charger les infos Sonarr
       const res = await sonarr.getShowDetail(showIdParam, instanceId);
-      console.log("📺 Show reçu:", res?.data);
-      show = res?.data ?? null;
+      let sonarrShow = res?.data ?? null;
+
+      if (sonarrShow?.path) {
+        // 2. Demander le tmdbId via ta route get-sonarr-id
+        const metaRes = await fetch(
+          `${API_BASE_URL}/symlinks/get-sonarr-id/${encodeURIComponent(sonarrShow.path)}`
+        );
+
+        if (metaRes.ok) {
+          const metaJson = await metaRes.json();
+
+          if (metaJson?.tmdbId) {
+            // 3. Aller chercher les métadonnées TMDB en FR
+            const tmdbRes = await fetch(
+              `${API_BASE_URL}/symlinks/tmdb/tv/${metaJson.tmdbId}?lang=fr-FR`
+            );
+
+            if (tmdbRes.ok) {
+              const tmdbData = await tmdbRes.json();
+
+              // 4. Fusionner les données Sonarr + TMDB
+              sonarrShow = {
+                ...sonarrShow,
+                tmdbId: metaJson.tmdbId,
+                overview: tmdbData.overview || sonarrShow.overview,
+                poster_url: tmdbData.poster || sonarrShow.poster_url,
+                banner_url: tmdbData.backdrop || sonarrShow.banner_url,
+                genres: tmdbData.genres?.length ? tmdbData.genres : sonarrShow.genres,
+                year: tmdbData.year || sonarrShow.year,
+                network: tmdbData.network || sonarrShow.network,
+                status: tmdbData.status || sonarrShow.status
+              };
+            }
+          }
+        }
+      }
+
+      show = sonarrShow;
     } catch (e) {
       console.error("❌ loadShowDetail error:", e);
-      error = 'Impossible de charger les détails de la série';
+      error = "Impossible de charger les détails de la série";
     } finally {
       loading = false;
     }
