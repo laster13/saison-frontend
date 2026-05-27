@@ -378,38 +378,80 @@
     selectedShows = new Set($shows.map((s) => s.id));
   }
 
-function onMissingChange(e: Event) {
-  const v = (e.target as HTMLSelectElement).value;
-  missing_episodes = v === '' ? undefined : v === 'true';
-  onBasicFilterChange();
-}
+  function onMissingChange(e: Event) {
+    const v = (e.target as HTMLSelectElement).value;
+    missing_episodes = v === '' ? undefined : v === 'true';
+    onBasicFilterChange();
+  }
 
   async function handleBulkSeasonIt() {
     if (selectedShows.size === 0) return;
+
     try {
       const us = await settings.getSettings();
       const requireConfirmation = us.data.require_deletion_confirmation;
       const skipDeletion = us.data.skip_episode_deletion;
+
       if (requireConfirmation && !skipDeletion) {
         const selectedOnPage = $shows.filter((s) => selectedShows.has(s.id));
         const titles = selectedOnPage.map((s) => s.title).join(', ');
-        if (!window.confirm(`Supprimer les épisodes existants de ${selectedShows.size} série(s) (${titles}) ?`)) return;
+
+        if (!window.confirm(`Supprimer les épisodes existants de ${selectedShows.size} série(s) (${titles}) ?`)) {
+          return;
+        }
       }
-      const inst = get(selectedInstance); if (!inst) return;
+
+      const inst = get(selectedInstance);
+      if (!inst) return;
+
       const items = Array.from(selectedShows).map((id) => {
         const s = $shows.find((x) => x.id === id);
-        return { id, name: s?.title ?? `Show ${id}`, season_number: null, poster_url: s?.poster_url || null, instance_id: inst.id };
+
+        return {
+          id,
+          name: s?.title ?? `Show ${id}`,
+          season_number: null,
+          poster_url: s?.poster_url || null,
+          instance_id: inst.id
+        };
       });
+
       const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL}/bulk-season-it`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: browser ? `Bearer ${localStorage.getItem('token') || ''}` : '' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: browser ? `Bearer ${localStorage.getItem('token') || ''}` : ''
+        },
         body: JSON.stringify({ show_items: items })
       });
-      if (!resp.ok) throw new Error(`Bulk Season It failed: ${resp.statusText}`);
-      selectedShows = new Set(); bulkMode = false;
+
+      if (!resp.ok) {
+        let detail = resp.statusText || 'Erreur inconnue';
+
+        try {
+          const payload = await resp.json();
+          detail = payload?.detail || payload?.message || detail;
+        } catch (_) {}
+
+        detail = String(detail || 'Erreur inconnue').replace(
+          /^Bulk Season It failed:\s*/i,
+          ''
+        );
+
+        throw new Error(detail || 'Erreur inconnue');
+      }
+
+      selectedShows = new Set();
+      bulkMode = false;
     } catch (e: any) {
       console.error('Bulk Season It failed:', e);
-      alert(`Bulk Season It failed: ${e.message || e}`);
+
+      const message = String(e?.message || e || 'Erreur inconnue').replace(
+        /^Bulk Season It failed:\s*/i,
+        ''
+      );
+
+      alert(`SeasonIt bulk : ${message || 'Erreur inconnue'}`);
     }
   }
 
