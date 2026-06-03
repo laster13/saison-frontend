@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -8,32 +8,26 @@ RUN npm ci
 
 COPY . .
 
-ENV NODE_ENV=production
-
-ARG GIT_SHA=unknown
-ARG BUILD_DATE=unknown
-
-RUN PACKAGE_VERSION="$(node -p "require('./package.json').version || '0.0.0'")" && \
-    echo "{\"version\":\"${PACKAGE_VERSION}\",\"commit\":\"${GIT_SHA}\",\"buildDate\":\"${BUILD_DATE}\"}" > version.json
-
 RUN npm run build
 
-RUN npm prune --omit=dev
 
+FROM node:20-alpine AS runtime
 
-FROM node:20-alpine AS runner
-
-WORKDIR /app
+RUN apk add --no-cache bash jq curl
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=8001
 
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/version.json ./version.json
+WORKDIR /app
 
-EXPOSE 3000
+COPY --from=build /app/build ./build
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/version.json ./version.json
+
+RUN ln -sfn /app /saison-frontend
+
+EXPOSE 8001
 
 CMD ["node", "build"]
