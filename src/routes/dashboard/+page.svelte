@@ -42,8 +42,6 @@
     runtime_range: { min: null, max: null }
   });
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL_HTTPS;
-
   // État local
   let showAddModal = false;
   let selectedId: number | null = null;
@@ -416,7 +414,7 @@
         };
       });
 
-      const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL}/bulk-season-it`, {
+      const resp = await fetch('/api/v1/bulk-season-it', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -472,7 +470,7 @@
 <!-- Logo cliquable -->
 <button
   class="flex items-center gap-3 group focus:outline-none"
-  on:click={() => (window.location.href = `${backendUrl}/settings/symlinks`)}
+  on:click={() => (window.location.href = '/settings/symlinks')}
 >
   <div class="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-rose-500 to-amber-400 shadow group-hover:scale-105 transition">
     <svg viewBox="0 0 24 24" class="h-5 w-5 text-white">
@@ -509,7 +507,7 @@
       </button>
       <button
         class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm"
-        on:click={() => (window.location.href = `${backendUrl}/settings/symlinks`)}
+        on:click={() => (window.location.href = '/settings/symlinks')}
       >
         Symlinks
       </button>      <button class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm" on:click={() => goto(`${base}/activity`)}>
@@ -558,7 +556,10 @@
       <!-- Symlinks -->
       <button
         class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm"
-        on:click={() => { goto('/settings/symlinks'); isMobileMenuOpen = false; }}
+        on:click={() => {
+          window.location.href = '/settings/symlinks';
+          isMobileMenuOpen = false;
+        }}
       >
         Symlinks
       </button>

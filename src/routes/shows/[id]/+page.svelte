@@ -25,7 +25,7 @@
   let searchModalSeason: number | null = null;
   let loadingSeasonIt = false;
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const API_BASE_URL = '/api/v1';
 
   async function handleClick() {
     loadingSeasonIt = true;
