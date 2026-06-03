@@ -1,28 +1,26 @@
-# Dépendances
-node_modules/
+# dependencies
+node_modules
 
-# Builds
-build/
-dist/
-.svelte-kit/
-.vite/
+# build output
+.svelte-kit
+build
+dist
 
-# Environnements
+# env files
 .env
-*.local
-*.db
+.env.*
+!.env.example
 
-# Logs
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Storybook
-storybook-static/
-
-# Coverage (tests)
-coverage/
-
-# OS
+# OS / editor
 .DS_Store
-Thumbs.db
+.vscode
+.idea
+
+# local compose override
+docker-compose.yml

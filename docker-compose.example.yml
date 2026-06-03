@@ -1,0 +1,16 @@
+services:
+  saison-frontend:
+    image: ghcr.io/laster13/saison-frontend:latest
+    container_name: saison-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8001
+      TZ: Europe/Paris
+    networks:
+      - traefik_proxy
+
+networks:
+  traefik_proxy:
+    external: true
